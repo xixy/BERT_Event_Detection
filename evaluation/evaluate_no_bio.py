@@ -118,9 +118,9 @@ def evaluate(result_path):
 
 
 if __name__ == '__main__':
-	labels = ['PER', 'PER', 'O', 'O', 'O', 'LOC', 'O']
-	print(get_chunks(labels))
-	print(evaluate('result.txt'))
+	# labels = ['PER', 'PER', 'O', 'O', 'O', 'LOC', 'O']
+	# print(get_chunks(labels))
+	print(evaluate('../output/result_dir/label_test.txt'))
 
 
 
