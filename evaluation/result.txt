@@ -1,0 +1,8 @@
+A	PER	PER
+A	PER	PER
+A	O	O
+A	O	O
+A	O	O
+A	O	O
+A	LOC	TIME
+A	O	O
