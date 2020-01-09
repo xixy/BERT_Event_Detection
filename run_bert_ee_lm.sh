@@ -24,7 +24,9 @@ do
 			--learning_rate=2e-5 \
 			--num_train_epochs=40.0 \
 			--output_dir=./output/lm/result_dir/$lambda_1/$lambda_2 \
-			--gpu_device=0
+			--gpu_device=0 \
+			--root_weight=$lambda_1 \
+			--coarse_weight=$lambda_2
 	done
 done
 
