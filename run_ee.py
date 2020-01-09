@@ -489,29 +489,15 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
     else:
       tokens_b.pop()
 
-# def hidden2tag(hiddenlayer,numclass):
-#   """
-#   进行线性变换
-#   """
-#   linear = tf.keras.layers.Dense(numclass,activation=None)
-#   return linear(hiddenlayer)
-
-# def crf_loss(logits, labels, mask, num_labels, mask2len):
-#   """
-
-#   """
-#   with tf.variable_scope("crf_loss"):
-#     trans = tf.get_variable(
-#       name = "transition",
-#       shape = [num_labels, num_labels],
-#       initializer = tf.contrib.
-#       )
 
 
 
 def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
                  labels, num_labels, use_one_hot_embeddings):
-  """Creates a classification model."""
+  """
+  Creates a classification model.
+  :params:labels shape = (batch size, sequence length)
+  """
 
   # Bert
   model = modeling.BertModel(
@@ -535,6 +521,8 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
 
   hidden_size = output_layer.shape[-1].value
 
+  length = output_layer.shape[1].value
+
   output_weights = tf.get_variable(
       "output_weights", [num_labels, hidden_size],
       initializer=tf.truncated_normal_initializer(stddev=0.02))
@@ -548,17 +536,56 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
 
       # shape = (batch size, seq_length, embedding_size)
       output_layer = tf.nn.dropout(output_layer, keep_prob=0.9)
+
     # shape = (batch size * seq_length, embedding_size)
     output_layer = tf.reshape(output_layer, [-1, hidden_size])
+
     logits = tf.matmul(output_layer, output_weights, transpose_b=True)
+
     # shape = (batch size * seq_length, num_labels)
     logits = tf.nn.bias_add(logits, output_bias)
-    # shape = (batch size * seq_length,）
-    labels = tf.reshape(labels, [-1])
 
+    # shape = (batch size, seq_length, num_labels)
+    logits = tf.reshape(logits, [-1, length, num_labels])
+
+    # 计算loss
+    # shape = (batch size, sequence length)
+    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+      logits = logits,
+      labels = labels
+      )
+
+    # 进行mask
+    # mask = tf.cast(input_mask, dtype=tf.float32)
+    loss = tf.boolean_mask(loss, input_mask)
+
+    loss = tf.reduce_mean(loss)
+
+    # 提取预测结果
+    # shape = (batch size * seq_length, num_labels)
+    logits = tf.reshape(logits, [-1, num_labels])
+
+
+    # shape = (batch size * seq_length, num_labels)
+    probabilities = tf.math.softmax(logits, axis=-1)
+    # shape = (batch size * seq_length,)
+    predict = tf.math.argmax(probabilities, axis=-1)
+
+    return (loss, logits, predict)
+
+
+    '''
+
+    # logits = tf.tanh(logits)
+
+    # shape = (batch size * seq_length,）
+    # labels = tf.reshape(labels, [-1])
+
+    # shape = (batch size, seq_length) [[1,1,1,...,0,0,0]]
     mask = tf.cast(input_mask, dtype=tf.float32)
     # shape = (batch size * seq_length, num_labels)
     one_hot_labels = tf.one_hot(labels, depth=num_labels, dtype=tf.float32)
+
     loss = tf.losses.softmax_cross_entropy(logits=logits,onehot_labels=one_hot_labels)
     loss *= tf.reshape(mask, [-1])
     loss = tf.reduce_sum(loss)
@@ -568,12 +595,9 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
     loss /= total_size
     # predict not mask we could filtered it in the prediction part.
 
-    # shape = (batch size * seq_length, num_labels)
-    probabilities = tf.math.softmax(logits, axis=-1)
-    # shape = (batch size * seq_length,)
-    predict = tf.math.argmax(probabilities, axis=-1)
+    '''
 
-    return (loss, logits, predict)
+
 
 
 def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
@@ -653,7 +677,7 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
       def metric_fn(label_ids, logits, num_labels, mask):
         predictions = tf.argmax(logits, axis=-1, output_type=tf.int32)
 
-        cm = metrics.streaming_confusion_matrix(label_ids, predictions, num_labels-1, weights=mask)
+        cm = metrics.streaming_confusion_matrix(label_ids, predictions, num_labels, weights=mask)
 
         return {
           "confusion_matrix": cm
