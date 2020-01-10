@@ -27,7 +27,10 @@ do
 			--gpu_device=0 \
 			--root_weight=$lambda_1 \
 			--coarse_weight=$lambda_2
+
+		python evaluation/evaluate_no_bio.py ./output/lm/result_dir/$lambda_1/$lambda_2/label_test.txt
 	done
 done
 
-perl ./evaluation/conlleval.pl -d '\t' < ./output/lm/result_dir/$lambda_1/$lambda_2/label_test.txt
+
+# perl ./evaluation/conlleval.pl -d '\t' < ./output/lm/result_dir/$lambda_1/$lambda_2/label_test.txt

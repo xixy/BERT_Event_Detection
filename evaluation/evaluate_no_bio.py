@@ -1,5 +1,6 @@
 #coding=utf-8
 import numpy as np
+import sys
 
 def get_chunks(labels):
 	"""
@@ -120,7 +121,8 @@ def evaluate(result_path):
 if __name__ == '__main__':
 	# labels = ['PER', 'PER', 'O', 'O', 'O', 'LOC', 'O']
 	# print(get_chunks(labels))
-	print(evaluate('../output/result_dir/label_test.txt'))
+	path = sys.argv[1]
+	print(evaluate(path))
 
 
 
